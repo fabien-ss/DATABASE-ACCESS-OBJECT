@@ -1,12 +1,14 @@
 package generic;
 
-@Correspondance(nomTable = "voiture")
+import annotation.Column;
+
+@Column(nomTable = "voiture")
 public class Voiture extends Model {
 
     int a;
-    @Correspondance(nomColonne = "m", typeColonne = "Varchar(200)")
+    @Column(nomColonne = "m")
     String marque;
-    @Correspondance(nomColonne = "plaque", typeColonne = "Varchar(200)")
+    @Column(nomColonne = "plaque")
     String plaque;
     String n;
 

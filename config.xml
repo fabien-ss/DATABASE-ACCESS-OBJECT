@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config>
+    <database>
+        <url>jdbc:postgresql://localhost:5432/postgres</url>
+        <user>fabien</user>
+        <pass>123Fabien$</pass>
+        <driver>org.postgresql.Driver</driver>
+    </database>
+</config>

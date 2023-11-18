@@ -10,49 +10,10 @@ import javax.xml.parsers.DocumentBuilder;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 
+import annotation.Column;
+import annotation.PrimaryKey;
+
 public class Model {
-
-    String prefixe = "";
-    int longPK = 7;
-    String sequence = "";
-    Boolean primaryKey = false;
-    String url = "";
-    String password = "";
-    String username = "";
-
-    public void init() throws Exception {
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        DocumentBuilder builder = factory.newDocumentBuilder();
-        Document doc = builder.parse(new File("/files/config.xml"));
-        Node databaseNode = doc.getElementsByTagName("database").item(0);
-        url = databaseNode.getChildNodes().item(1).getTextContent();
-        username = databaseNode.getChildNodes().item(3).getTextContent();
-        password = databaseNode.getChildNodes().item(5).getTextContent();   
-    }
-
-    public void checkDatabaseConnection() throws Exception {
-        if(url.equals("")) throw new Exception("Url vide.");
-        if(username.equals("")) throw new Exception("Nom d'utilisateur vide.");
-        if(password.equals("")) throw new Exception("Mot de passe vide.");
-    }
-    
-    public Connection enterToBdd() throws Exception{
-        this.init();
-        this.checkDatabaseConnection();
-        Class.forName("org.postgresql.Driver");
-        Connection c = DriverManager.getConnection(this.url, this.username, this.password);
-        c.setAutoCommit(false);
-        return c;
-   }
-
-    public String getTableName() throws Exception{
-        try{
-            return this.getClass().getAnnotation(Correspondance.class).nomTable();
-        }
-        catch(Exception e){
-            throw new Exception("Pas de correspondance de table");
-        } 
-    }
 
     public Vector getComposant(ResultSet resultSet) throws Exception {
         Field[] fields = this.getClass().getDeclaredFields();
@@ -110,9 +71,9 @@ public class Model {
     String nomColonnePrimaryKey(Field[] modelFields)throws Exception{
         for (int i = 0; i < modelFields.length; i++) {
             modelFields[i].setAccessible(true);
-            if(modelFields[i].getDeclaredAnnotation(Correspondance.class)==null)
+            if(modelFields[i].getDeclaredAnnotation(Column.class)==null)
                 continue;
-            Correspondance coresp=modelFields[i].getAnnotation(Correspondance.class);
+            Column coresp=modelFields[i].getAnnotation(Column.class);
             if(coresp.primarykey()){
                 return modelFields[i].getName()+"='"+modelFields[i].get(this)+"'";
             }
@@ -124,10 +85,10 @@ public class Model {
         String condition = "";
         for (int i = 0; i < modelFields.length; i++) {
             modelFields[i].setAccessible(true);
-            if(modelFields[i].getDeclaredAnnotation(Correspondance.class)==null)
+            if(modelFields[i].getDeclaredAnnotation(Column.class)==null)
                 continue;
-            Correspondance coresp=modelFields[i].getAnnotation(Correspondance.class);
-            if(coresp.primarykey()){
+            Column coresp=modelFields[i].getAnnotation(Column.class);
+            if(this.getClass().isAnnotationPresent(PrimaryKey.class)){
                 if(modelFields[i].get(this)!=null) {
                     return modelFields[i].getName()+"='"+modelFields[i].get(this)+"'";
                 } 
@@ -157,6 +118,7 @@ public class Model {
         return pk;
     }
 
+
     public boolean hasCondition(Field[] modelFields) throws Exception{
         for (int i = 0; i < modelFields.length; i++) {
             modelFields[i].setAccessible(true);
@@ -167,12 +129,49 @@ public class Model {
         return false;
     }
 
+    public static boolean isAtDefaultValue(Method field, Object obj) throws IllegalAccessException, IllegalArgumentException, InvocationTargetException {
+           Object value = field.invoke(obj);
+   
+           if (value == null) {
+               return true;
+           } else if (field.getReturnType().isPrimitive()) {
+            //   System.out.println("ici "+getPrimitiveDefaultValue(field.getReturnType()));
+               return value.equals(getPrimitiveDefaultValue(field.getReturnType()));
+           } else if (value instanceof Collection) {
+               return ((Collection<?>) value).isEmpty();
+           } else {
+               return false; 
+           }
+       }
+   
+       private static Object getPrimitiveDefaultValue(Class<?> type) {
+           if (type == boolean.class) {
+               return false;
+           } else if (type == char.class) {
+               return '\u0000';
+           } else if (type == double.class) {
+               return 0.0;
+           } else if (type == float.class) {
+               return 0.0f;
+           } else if (type == byte.class) {
+               return (byte) 0;
+           } else if (type == short.class) {
+               return (short) 0;
+           } else if (type == int.class) {
+               return 0;
+           } else if (type == long.class) {
+               return 0L;
+           } else {
+               return null;  // Pour d'autres types primitifs, la valeur par défaut est null
+           }
+       }
+
     public String getCondition() throws Exception{
         String condition = " WHERE ";
         Field[] g = this.getClass().getDeclaredFields();
 
         for (int i = 0; i < g.length; i++) {
-            if (g[i].getAnnotation(Correspondance.class) != null && g[i].get(this) != null) {
+            if (g[i].getAnnotation(Column.class) != null && g[i].get(this) != null) {
                 g[i].setAccessible(true);
                 condition = condition +" "+ g[i].getName() + "='" + g[i].get(this) + "' and";
             }
@@ -205,21 +204,22 @@ public class Model {
         String values = "";
         for (Field field : g) {
             field.setAccessible(true);
-            if(field.getAnnotation(Correspondance.class) != null && field.get(this) !=null){  
+            if(field.getAnnotation(Column.class) != null && field.get(this) !=null){  
                 values = values + "'" + field.get(this) + "',";
             }
+            field.setAccessible(false);
         }
         values = values.substring(0, values.length() - 1);
         return values;
     }
 
-    public String colonnes() throws Exception{
+    public String getColumn() throws Exception{
         Field[] g = this.getClass().getDeclaredFields();
         String values = "(";
         for (Field field : g) {
             field.setAccessible(true);
-            if(field.getAnnotation(Correspondance.class) != null && field.get(this) !=null){
-                Correspondance correspondance = field.getAnnotation(Correspondance.class);
+            if(field.getAnnotation(Column.class) != null && field.get(this) !=null){
+                Column correspondance = field.getAnnotation(Column.class);
                 if(!correspondance.nomColonne().equals("")){
                     values = values + "" + correspondance.nomColonne() + ",";
                 }
@@ -235,7 +235,7 @@ public class Model {
     public String construirePK(Connection c) throws Exception {
         Boolean mine = true;
         if(c==null || c.isClosed())
-            c = this.enterToBdd();
+            c = new DbConnexion().enterToBdd();
             mine = false;
         int sequence = this.getSequence(c);
         int nb = this.getPrefixe().length();
@@ -258,7 +258,7 @@ public class Model {
 
     public int getSequence(Connection c) throws Exception {
         if (c == null || c.isClosed()) {
-            c = this.enterToBdd();
+            c = new DbConnexion().enterToBdd();
         }
         String sql = "Select nextval('" + this.getSequence() + "')";
         Statement statement = c.createStatement();
@@ -274,9 +274,9 @@ public class Model {
         Field[] g = o.getClass().getDeclaredFields();
         for (int i = 0; i < g.length; i++) {
             g[i].setAccessible(true);
-            if (g[i].getAnnotation(Correspondance.class) != null && g[i].get(o) != null) {
+            if (g[i].getAnnotation(Column.class) != null && g[i].get(o) != null) {
                 g[i].setAccessible(true);
-                Correspondance coresp=g[i].getAnnotation(Correspondance.class);
+                Column coresp=g[i].getAnnotation(Column.class);
                 if(!coresp.nomColonne().equals("")){
                     condition = condition + " " + coresp.nomColonne() + "='" + g[i].get(o) + "',";
                 }
@@ -292,12 +292,12 @@ public class Model {
     public void insert(Connection c) throws Exception {
         boolean mine = true;
         if (c == null || c.isClosed()) {
-            c = this.enterToBdd();
+            c = new DbConnexion().enterToBdd();
             mine = false;
         }
         String values = this.stringValues();
-        String nomDeTable = this.getTableName();
-        String colonnes = this.colonnes();
+        String nomDeTable = Utils.getTableName(this);
+        String colonnes = this.getColumn();
         String query = "INSERT INTO " + nomDeTable+ " " + colonnes + " VALUES(" + values + ")";
         System.out.println(query);
         Statement statement = c.createStatement();
@@ -314,13 +314,13 @@ public class Model {
     public void update(Connection c, Object o) throws Exception {
         boolean mine = true;
         if (c == null || c.isClosed()) {
-            c = this.enterToBdd();
+            c = new DbConnexion().enterToBdd();
             mine = false;
         }
         Statement statement = c.createStatement();
         String setter = this.getSetter(o);
         String condition = this.condition();
-        String nomDeTable = this.getTableName();
+        String nomDeTable = Utils.getTableName(this);
         String query = "UPDATE " + nomDeTable + setter + condition;
         System.out.println(query);
         int x = statement.executeUpdate(query);
@@ -338,11 +338,11 @@ public class Model {
     public void delete(Connection c) throws Exception {
         boolean mine = true;
         if (c == null || c.isClosed()) 
-            c = this.enterToBdd();
+            c = new DbConnexion().enterToBdd();
             mine = false;
         Statement statement = c.createStatement();
         String condition = this.condition();
-        String nomDeTable = this.getTableName();
+        String nomDeTable = Utils.getTableName(this);
         String query = "DELETE FROM " + nomDeTable + " " + condition;
         System.out.println(query);
         int x = statement.executeUpdate(query);
@@ -358,9 +358,9 @@ public class Model {
     public Object select(Connection c) throws Exception {
         boolean mine = true;
         if (c == null || c.isClosed())
-            c = this.enterToBdd();
+            c = new DbConnexion().enterToBdd();
             mine = false;
-        String nomDeTable = this.getTableName();
+        String nomDeTable = Utils.getTableName(this);
         String query = "Select * from " + nomDeTable;
         String condition = this.condition();
         Statement statement = c.createStatement();
@@ -376,7 +376,7 @@ public class Model {
     public void executeQuery(Connection c, String query) throws Exception {
         boolean mine = true;
         if (c == null || c.isClosed()) 
-            c = this.enterToBdd();
+            c = new DbConnexion().enterToBdd();
             mine = false;
         System.out.println(query);
         Statement statement = c.createStatement();
@@ -388,9 +388,9 @@ public class Model {
         System.out.println("selectAll");
         boolean mine = true;
         if (c == null || c.isClosed()) 
-            c = this.enterToBdd();
+            c = new DbConnexion().enterToBdd();
             mine = false;
-        String nomDeTable = this.getTableName();
+        String nomDeTable = Utils.getTableName(this);
         String condition = this.condition();
         String query = "Select * from " + nomDeTable + " " + condition;
         System.out.println(query);
@@ -401,61 +401,6 @@ public class Model {
         System.out.println(vObjects.size() + " "+ "lines find");
         if (!mine) c.close();
         return vObjects;
-    }
-
-    public static String sqlType(Field o) throws Exception {
-        Correspondance annotation = o.getDeclaredAnnotation(Correspondance.class);
-        String retour = annotation.nomColonne() + " " + annotation.typeColonne();
-        if(annotation.primarykey()) retour += " PRIMARY KEY ";
-        if(annotation.foreignkey()) retour += " FOREIGN KEY " + annotation.foreignkeyColonne();
-        return retour;
-    }
-
-    public String sqlColonne() throws Exception{
-        Field[] fields = this.getClass().getDeclaredFields();
-        String colonnes = "( \n";
-        for(int i=0; i<fields.length; i++){
-            if(fields[i].isAnnotationPresent(Correspondance.class)){
-                String temp = sqlType(fields[i]);
-                colonnes += "\t" + temp;
-                if(i != fields.length - 1 & fields[i + 1].isAnnotationPresent(Correspondance.class)){
-                    colonnes += ",";
-                }
-                colonnes += "\n";
-            }
-        }
-        return colonnes + ");";
-    }
-
-    public String migrate() throws Exception{
-        String create = "CREATE TABLE IF NOT EXISTS ";
-        String tableName = this.getTableName();
-        String colonnes = this.sqlColonne();
-        return create + tableName + colonnes;
-    }
-
-    public String getUrl() {
-        return url;
-    }
-
-    public void setUrl(String url) {
-        this.url = url;
-    }
-
-    public String getPassword() {
-        return password;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    public void setUsername(String username) {
-        this.username = username;
     }
 
     public void setPrefixe(String prefixe) {
