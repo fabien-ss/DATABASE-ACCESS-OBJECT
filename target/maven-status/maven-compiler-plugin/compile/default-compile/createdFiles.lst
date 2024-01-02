@@ -1,0 +1,8 @@
+com/generique/Main.class
+generic/dao/Model.class
+generic/dao/TableUtility.class
+test/Personne.class
+test/Etudiant.class
+test/Main.class
+generic/base/Connexion.class
+generic/annotaion/Correspondance.class
