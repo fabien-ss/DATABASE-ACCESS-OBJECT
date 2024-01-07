@@ -8,6 +8,7 @@ import java.util.List;
 @P(p = "T", l = 7, s = "seq_test2")
 @C(t = "test2")
 public class Test3 {
+    
     @C(pk = true, c = "id")
     String id;
     @C(c = "id_test" , fk = true)

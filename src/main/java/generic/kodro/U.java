@@ -3,20 +3,51 @@ package generic.kodro;
 import generic.annotation.C;
 import generic.annotation.P;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.sql.Connection;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Vector;
 
 public class U {
+
+     public static void closeData(Connection c, boolean mine) throws SQLException {
+        if(!mine){
+            try {
+                c.commit();
+            } catch (Exception ee) {
+                c.rollback();
+            } finally {
+                c.close();
+            }
+        }
+    }
+
+    public static String multipleInsert(Connection c ,List<Field> fields,List<Object> objects) throws Exception{
+        String sqlValues = "";
+        for (int i = 0; i < objects.size(); i++) {
+            if(i > 0) U.construirePK(c, objects.get(i), fields);
+            sqlValues += " " + stringValues(fields, objects.get(i)) +",";
+        }
+        return sqlValues.substring(0, sqlValues.length() - 1);
+    }
+
+    public static String stringValues(List<Field> g, Object o) throws Exception{
+        String values = "(";
+        for (Field field : g) {
+            field.setAccessible(true);
+            if(field.getAnnotation(C.class) != null && field.get(o) !=null){
+                values = values + "'" + field.get(o) + "',";
+            }
+        }
+        values = values.substring(0, values.length() - 1);
+        return values + ")";
+    }
 
     public static String getTableName(Object o) throws Exception{
         try{
@@ -110,17 +141,7 @@ public class U {
         return pk;
     }
 
-    static String stringValues(List<Field> g, Object o) throws Exception{
-        String values = "";
-        for (Field field : g) {
-            field.setAccessible(true);
-            if(field.getAnnotation(C.class) != null && field.get(o) !=null){
-                values = values + "'" + field.get(o) + "',";
-            }
-        }
-        values = values.substring(0, values.length() - 1);
-        return values;
-    }
+    
 
     public static String colonnes(List<Field> g, Object o) throws Exception{
         String values = "(";
@@ -142,6 +163,7 @@ public class U {
     }
 
     public static void construirePK(Connection c, Object o, List<Field> fields) throws Exception {
+        
         Object[] sequenceValue = getSequenceValue(o);
         int sequence = getSequence(c, (String) sequenceValue[0]);
         int nb = ((String)sequenceValue[2]).length();
@@ -151,20 +173,23 @@ public class U {
         setPrimaryKeyField(fields, sequenceV, o);
     }
 
-    private static void setPrimaryKeyField(List<Field> fields, String sequence, Object o) throws Exception {
+    public static void setPrimaryKeyField(List<Field> fields, String sequence, Object o) throws Exception {
         boolean isAccessible = false;
         for (Field f: fields) {
+            System.out.println(f.getName());
             if(f.isAnnotationPresent(C.class)){
+                System.out.println("nisy");
                 C c = f.getDeclaredAnnotation(C.class);
-                if(c.pk() & f.get(o) != null){
-                    f.setAccessible(true);
+                f.setAccessible(true);
+                if(c.pk() & f.get(o) == null){
+                    System.out.println("null daholo");
                     f.set(o, sequence);
-                    f.setAccessible(false);
-                    break;
+                    return;
                 }
+                f.setAccessible(false);
             }
         }
-        throw new Exception("DAO - You didn't specify primary key");
+       // throw new Exception("DAO - You didn't specify primary key");
     }
 
     private static String mameno(int numero, int reste) {

@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 import generic.base.Connexion;
@@ -14,12 +15,18 @@ public class Main {
     public static void main(String[] args) throws Exception {
         Connection c = new Connexion().enterToBdd();
 
-        Test3 test3 = new Test3();
-        test3.setId("T001");
+        List<Object> test = new ArrayList<Object>();
+         for (int i = 0; i < 5; i++) {
+            Test2 tesst = new Test2();
+            tesst.setTest(i + "code");
+            test.add(tesst);
+        }
 
-        test3 = (Test3) A.select(c, test3).get(0);
+        A.insert(c, test);
 
-        System.out.println(test3.getTest().getTest());
+//        test3 = (Test3) A.select(c, test3).get(0);
+
+ //       System.out.println(test3.getTest().getTest());
         /*Test2 test;
         LocalDateTime localDate = LocalDateTime.now();
         for (int i = 0; i < 5; i++) {

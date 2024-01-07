@@ -7,100 +7,110 @@ import java.util.*;
 import generic.base.*;
 
 public class A {
-    public static Statement statement;
-    public static String query;
-    public static boolean mine = true;
+
+    public static void insert(Connection c, List<Object> o) throws Exception {
+        boolean mine = true;
+        if (c == null || c.isClosed()) {
+            c = new Connexion().enterToBdd();
+            mine = false;
+        }
+        List<Field> fields = U.getFields(o.get(0).getClass());
+        U.construirePK(c, o.get(0), fields);
+        System.out.println("first init ok");
+        String query = "INSERT INTO " + U.getTableName(o.get(0))+ " " + U.colonnes(fields, o.get(0)) + " VALUES " + U.multipleInsert(c,fields, o) + "";
+        System.out.println(query);
+        Statement statement = c.createStatement();
+        int x = statement.executeUpdate(query);
+        System.out.println(x + " row(s)");
+        U.closeData(c, mine);
+    }
 
     public static void insert(Connection c, Object o) throws Exception {
+        boolean mine = true;
         if (c == null || c.isClosed()) {
             c = new Connexion().enterToBdd();
             mine = false;
         }
         List<Field> fields = U.getFields(o.getClass());
         U.construirePK(c, o, fields);
-        query = "INSERT INTO " + U.getTableName(o)+ " " + U.colonnes(fields, o) + " VALUES(" + U.stringValues(fields, o) + ")";
+        String query = "INSERT INTO " + U.getTableName(o)+ " " + U.colonnes(fields, o) + " VALUES " + U.stringValues(fields, o) + "";
         System.out.println(query);
-        statement = c.createStatement();
+        Statement statement = c.createStatement();
         int x = statement.executeUpdate(query);
         System.out.println(x + " row(s)");
-        closeData(c);
+        U.closeData(c, mine);
     }
 
     public static void update(Connection c, Object o1, Object o) throws Exception {
+        boolean mine = true;
         if (c == null || c.isClosed()) {
             c = new Connexion().enterToBdd();
             mine = false;
         }
         List<Field> fields = U.getFields(o1.getClass());
-        statement = c.createStatement();
-        query = "UPDATE " + U.getTableName(o1) + U.getSetter(o) + U.condition(fields, o1);
+        Statement statement = c.createStatement();
+        String query = "UPDATE " + U.getTableName(o1) + U.getSetter(o) + U.condition(fields, o1);
         System.out.println(query);
         int x = statement.executeUpdate(query);
-        closeData(c);
+        U.closeData(c, mine);
     }
 
     public static void delete(Connection c, Object o) throws Exception {
+        boolean mine = true;
         if (c == null || c.isClosed()) {
             c = new Connexion().enterToBdd();
             mine = false;
         }
-        statement = c.createStatement();
+        Statement statement = c.createStatement();
         List<Field> fields = U.getFields(o.getClass());
-        query = "DELETE FROM " + U.getTableName(o) + " " + U.condition(fields, o);
+        String query = "DELETE FROM " + U.getTableName(o) + " " + U.condition(fields, o);
         System.out.println(query);
         int x = statement.executeUpdate(query);
-        closeData(c);
+        U.closeData(c, mine);
     }
 
     public static List select(Connection c, Object o) throws Exception {
+        boolean mine = true;
         if (c == null || c.isClosed()) {
             c = new Connexion().enterToBdd();
             mine = false;
         }
         List<Field> fields = U.getFields(o.getClass());
-        statement = c.createStatement();
-        query = "SELECT * FROM " + U.getTableName(o) + " " + U.condition(fields, o);
+        Statement statement = c.createStatement();
+        String query = "SELECT * FROM " + U.getTableName(o) + " " + U.condition(fields, o);
         System.out.println(query);
         ResultSet resultSet = statement.executeQuery(query);
         List object = U.getComposant(resultSet, fields, o, c);
         System.out.println("line find");
+        U.closeData(c, mine);
         return object;
     }
 
     public static List executeQuery(Connection c, Object o, String sql) throws Exception {
+        boolean mine = true;
         if (c == null || c.isClosed()) {
             c = new Connexion().enterToBdd();
             mine = false;
         }
         List<Field> fields = U.getFields(o.getClass());
         System.out.println(sql);
+        Statement statement = c.createStatement();
         ResultSet resultSet = statement.executeQuery(sql);
         List object = U.getComposant(resultSet, fields, o, c);
         System.out.println("line find");
+        U.closeData(c, mine);
         return object;
     }
 
     public static void executeUpdate(Connection c, String sql) throws Exception {
+        boolean mine = true;
         if (c == null || c.isClosed()) {
             c = new Connexion().enterToBdd();
             mine = false;
         }
         System.out.println(sql);
-        statement = c.createStatement();
+        Statement statement = c.createStatement();
         int x = statement.executeUpdate(sql);
-        closeData(c);
-    }
-
-    public static void closeData(Connection c) throws SQLException {
-        if(!mine){
-            try {
-                c.commit();
-            } catch (Exception ee) {
-                c.rollback();
-            } finally {
-                c.close();
-            }
-            mine = true;
-        }
+        U.closeData(c, mine);
     }
 }
