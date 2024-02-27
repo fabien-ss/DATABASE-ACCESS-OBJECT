@@ -1,8 +1,14 @@
-com/generique/Main.class
+test/Test2.class
+generic/annotation/C.class
+test/Test.class
 generic/dao/Model.class
+generic/kodro/A.class
 generic/dao/TableUtility.class
-test/Personne.class
+generic/annotation/P.class
 test/Etudiant.class
+generic/annotation/F.class
+generic/kodro/U.class
+test/Personne.class
 test/Main.class
 generic/base/Connexion.class
-generic/annotaion/Correspondance.class
+test/Test3.class

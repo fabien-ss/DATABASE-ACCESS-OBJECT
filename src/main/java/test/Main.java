@@ -16,14 +16,33 @@ public class Main {
         Connection c = new Connexion().enterToBdd();
 
         List<Object> test = new ArrayList<Object>();
-         for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < 5; i++) {
             Test2 tesst = new Test2();
             tesst.setTest(i + "code");
             test.add(tesst);
         }
 
+
         A.insert(c, test);
 
+        Test2 test2 = new Test2();
+        test2.setTest("tsy aiko");
+
+        //  A.update(c, ((Test2) test.get(0)), test2);
+
+        //  A.delete(c, ((Test2) test.get(0)));
+         Test3 test3 = new Test3();
+         test3.setId("ok");
+         Test2 test21 = new Test2();
+
+        test21.setIdtest("V271981");
+        List<Test> testsList = A.select(c, test21);
+
+         for (Test t : testsList){
+             System.out.println("valiny "+ t.getIdtest());
+         }
+
+         c.commit();
 //        test3 = (Test3) A.select(c, test3).get(0);
 
  //       System.out.println(test3.getTest().getTest());
